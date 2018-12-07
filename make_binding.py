@@ -14,14 +14,14 @@ rabbitmq_user = "testuser"
 rabbitmq_password = "testpassword"
 
 rabbitmq_user_guest = "guest"
-rabbitmq_password_guest = ""
+rabbitmq_password_guest = "guest"
 
 outgoingRoutingKeys = ["outgoing_routing_key"]
 outgoingQueues = ["some_outgoing_queue "]
 
 # The binding area
-credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_password)
-# credentials = pika.PlainCredentials(rabbitmq_user_guest)
+# credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_password)
+credentials = pika.PlainCredentials(rabbitmq_user_guest, rabbitmq_password_guest)
 connection = pika.BlockingConnection(pika.ConnectionParameters(rabbitmq_host, rabbitmq_port, rabbitmq_virtual_host, credentials))
 channel = connection.channel()
 channel.queue_bind(exchange=rabbitmq_rcv_exchange, queue=rabbitmq_rcv_queue, routing_key=rabbitmq_rcv_key)

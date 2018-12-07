@@ -10,15 +10,17 @@ Run everything in the order
 
 `./install_and_start_rabbitmq.sh`
 
-`./add_user_perm.sh`
+`./add_user_perm.sh` - add a user and permissions
 
-`./make_vhost_and_set_perm.sh`
+`./make_vhost_and_set_perm.sh` - make a virtual host and set permissions for guest
 
-`./make_exchange.sh`
+`./make_exchange.sh` - make an exchange for virtual host
 
-`./make_queue.sh`
+`./make_queue.sh` - make a queue for virtual host
 
-`./make_binding.py` or `./make_binding.sh` - got access denied so fix is needed
+`./make_binding.py` or `./make_binding.sh` - make a binding - having an issue `(404, "NOT_FOUND - no queue 'some_incoming_queue' in vhost 'Some_Virtual_Host'")`
+
+`./enable_rabbitmq_management.sh` - you will be able to access [http://localhost:15672](http://localhost:15672)
 
 ## Requirements
 
