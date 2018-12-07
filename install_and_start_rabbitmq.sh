@@ -18,3 +18,5 @@ then
   echo "Adding rabbitmq PATH to profile"
   printf "\n$p\n" >> ~/.bash_profile
 fi
+
+lsof -n -i -P | grep LISTEN | grep '5672 '
