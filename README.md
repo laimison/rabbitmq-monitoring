@@ -18,9 +18,11 @@ Run everything in the order
 
 `./make_queue.sh` - make a queue for virtual host
 
-`./make_binding.py` or `./make_binding.sh` - make a binding - having an issue `(404, "NOT_FOUND - no queue 'some_incoming_queue' in vhost 'Some_Virtual_Host'")`
+`./make_binding.py` or `./make_binding.sh` - make a binding - additionally created some_incoming_queue in vhost so script is able to reach that`
 
 `./enable_rabbitmq_management.sh` - you will be able to access [http://localhost:15672](http://localhost:15672)
+
+`./list_queues.sh` - list queue names and messages count
 
 ## Requirements
 
