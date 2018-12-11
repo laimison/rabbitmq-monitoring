@@ -20,9 +20,13 @@ Run everything in the order
 
 `./make_binding.py` or `./make_binding.sh` - make a binding - additionally created some_incoming_queue in vhost so script is able to reach that`
 
-`./enable_rabbitmq_management.sh` - you will be able to access [http://localhost:15672](http://localhost:15672)
+`./enable_rabbitmq_management.sh`
 
 `./list_queues.sh` - list queue names and messages count
+
+`./list_queues_builtin_api.sh` - list information about the queues from API in json
+
+`./publish_message.sh` - publish message in a queue by hand
 
 ## Requirements
 
