@@ -4,7 +4,7 @@ import pika
 rabbitmq_host = "127.0.0.1"
 rabbitmq_port = 5672
 rabbitmq_virtual_host = "Some_Virtual_Host"
-rabbitmq_send_exchange = "some_exchange" 
+rabbitmq_send_exchange = "some_exchange"
 rabbitmq_rcv_exchange = "some_exchange"
 
 rabbitmq_rcv_queue = "some_incoming_queue"
