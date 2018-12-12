@@ -4,29 +4,27 @@ This repo helps to install and configure RabbitMQ. The main goal is to prepare m
 
 ## Usage
 
-Run everything in the order
+* Firstly, install dependencies and RabbitMQ. Check this directory for the scripts:
 
-`./install_dependencies.sh`
+`install/`
 
-`./install_and_start_rabbitmq.sh`
+* If you want to do some clean up in your development environment check scripts in a directory - this is destructive and can delete all your users and queues!
 
-`./add_user_perm.sh` - add a user and permissions
+`delete/`
 
-`./make_vhost_and_set_perm.sh` - make a virtual host and set permissions for guest
+* Create users, vhosts, exchanges and queues
 
-`./make_exchange.sh` - make an exchange for virtual host
+`add/` - you need monitoring user if you are looking for monitoring solution
 
-`./make_queue.sh` - make a queue for virtual host
+* Make a binding
 
-`./make_binding.py` or `./make_binding.sh` - make a binding - additionally created some_incoming_queue in vhost so script is able to reach that`
+`./bind.py` or `./bind.sh`
 
-`./enable_rabbitmq_management.sh`
+* To enable plugin, check this directory
 
-`./list_queues.sh` - list queue names and messages count
+`enable/` - rabbitmq_management is usually enabled so you can do monitoring GET queries
 
-`./list_queues_builtin_api.sh` - list information about the queues from API in json
-
-`./publish_message.sh` - publish message in a queue by hand
+* Use the commands in a root dir to check the queues, publish messages, check some statuses and utilizations
 
 ## Requirements
 
@@ -35,3 +33,4 @@ Scripts are designed for Mac OS.
 ## References
 
 [https://stackoverflow.com/questions/4545660/rabbitmq-creating-queues-and-bindings-from-a-command-line](https://stackoverflow.com/questions/4545660/rabbitmq-creating-queues-and-bindings-from-a-command-line)
+[https://stackoverflow.com/questions/52010390/permissions-that-need-to-be-assigned-to-a-monitoring-software](https://stackoverflow.com/questions/52010390/permissions-that-need-to-be-assigned-to-a-monitoring-software)

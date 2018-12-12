@@ -23,5 +23,3 @@ get prometheus_cowboy-0.1.4.ez
 get prometheus_httpd-2.1.8.ez
 get prometheus_process_collector-1.3.1.ez
 get prometheus_rabbitmq_exporter-3.7.2.3.ez
-
-rabbitmq-plugins enable prometheus_rabbitmq_exporter
