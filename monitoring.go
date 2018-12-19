@@ -66,10 +66,17 @@ func main() {
   fmt.Printf("\nSpecies:\n%s\n\nDescription:\n%s\n", bird.Species, bird.Description)
 
   // Converting string to json
-  jsonString := "{\"foo\":{\"baz\": [1,2,3]}}"
+  // jsonString := "{\"foo\":{\"baz\": [1,2,3]}}"
+  jsonString := rest_query("GET", "https://api.github.com/users/1", "", "")
+
+  // rest_query_content2 := rest_query("GET", "http://api.open-notify.org/astros.json", "", "")
+  // fmt.Println(rest_query_content2)
 
   var jsonMap map[string]interface{}
   json.Unmarshal([]byte(jsonString ), &jsonMap)
 
-  fmt.Println(jsonMap) 
+  fmt.Println(jsonMap)
+
+  // Convert string to json
+  // jsonString2 := "[{ "arguments": true }]"
 }
