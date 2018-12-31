@@ -87,21 +87,21 @@ func parse_args() {
   flag.Parse()
 
   // Output to the screen
-  fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
-  fmt.Println("Queues to be monitored:", QueuesFlags)
-  fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
-  fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
-
-  fmt.Println("URL:", URLFlag)
-  fmt.Println("Username:", UsernameFlag)
-  fmt.Println("Password:", PasswordFlag)
-  fmt.Println("Virtual host:", VHostFlag)
-
-  fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
-  fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
+  // fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
+  // fmt.Println("Queues to be monitored:", QueuesFlags)
+  // fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
+  // fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
+  //
+  // fmt.Println("URL:", URLFlag)
+  // fmt.Println("Username:", UsernameFlag)
+  // fmt.Println("Password:", PasswordFlag)
+  // fmt.Println("Virtual host:", VHostFlag)
+  //
+  // fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
+  // fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
 }
 
-func http_query(method string, address string, user string, pass string) ([]byte) {
+func http_query(method string, address string, user string, pass string) string {
   // Use HTTP connection
   var client_with_timeout = &http.Client{
     Timeout: time.Second * 10,
@@ -128,32 +128,9 @@ func http_query(method string, address string, user string, pass string) ([]byte
   var result map[string]interface{}
   json.Unmarshal([]byte(bodyText), &result)
 
-  // Output whole JSON in "[]byte" data type
-  return bodyText
-}
-
-func parse_json_example() {
-  // Parsing json
-  type Bird struct {
-    Species string
-    Description string
-  }
-
-  birdJson := `{"species": "pigeon","description": "likes to perch on rocks"}`
-  var bird Bird
-
-  json.Unmarshal([]byte(birdJson), &bird)
-
-  fmt.Printf("\nSpecies:\n%s\n\nDescription:\n%s\n", bird.Species, bird.Description)
-}
-
-func parse_json_example2() {
-  jsonString := http_query("GET", "https://api.github.com/users/1", "", "")
-
-  var jsonMap map[string]interface{}
-  json.Unmarshal([]byte(jsonString ), &jsonMap)
-
-  fmt.Println(jsonMap)
+  // We have whole JSON in "[]byte" data type and want to convert to string
+  bodyText_string := string(bodyText)
+  return bodyText_string
 }
 
 func main() {
@@ -161,59 +138,18 @@ func main() {
 
   // Doing HTTP query
   http_query_content := http_query("GET", "http://localhost:15672/api/queues", "monitoring", "password")
-  // fmt.Println(string(http_query_content))
 
-  type PublicKey2 struct {
+  type PublicKey struct {
     Name string
     Messages int
   }
 
-  input2 := []byte(string(http_query_content))
-
-  var output2 []PublicKey2
-  json.Unmarshal([]byte(input2), &output2)
-
-  for key2, value2 := range output2 {
-    fmt.Printf("Id: %v\n", key2)
-    fmt.Printf("Name: %v\n", value2.Name)
-    fmt.Printf("Messages: %v\n", value2.Messages)
-  }
-
-  type PublicKey struct {
-    Id int
-    People string
-    // [] tells that it's json array, remove if you don't have array in front of groups:
-    Groups []struct {
-      Name string
-    }
-  }
-
-  input := []byte(`[
-    {"id": 1, "people": "Tom", "groups": [{"name": "groupA"}]},
-    {"id": 2, "people": "Ben", "groups": [{"name": "groupB"}]},
-    {"id": 3, "people": "Dan", "groups": [{"name": "groupA"}, {"name": "groupC"}]}
-    ]`)
+  input := []byte(http_query_content)
 
   var output []PublicKey
   json.Unmarshal([]byte(input), &output)
 
-  for key, value := range output {
-    fmt.Printf("Id: %v\n", key)
-    fmt.Printf("People: %v\n", value.People)
-
-    // fmt.Printf("Groups: %v\n", value.Groups[0].Name)
-    for key_groups, value_groups := range value.Groups {
-      fmt.Printf("  Group %v: %v\n", key_groups, value_groups.Name)
-    }
-    fmt.Println()
+  for _ , value := range output {
+    fmt.Printf("%v: %v\n", value.Name, value.Messages)
   }
-
-  // b, err := json.MarshalIndent(http_query_content, "", "   ")
-  // if err != nil {
-  //   fmt.Println("error:", err)
-  // }
-  // os.Stdout.Write(b)
-
-  // parse_json_example()
-  // parse_json_example2()
 }
