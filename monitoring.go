@@ -16,11 +16,12 @@ import (
   "log"
   "encoding/json"
   "time"
+  // "encoding/base64"
 )
 
 var _ = fmt.Printf
 
-// Multiple string arguments
+// Arguments parsing
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
@@ -66,6 +67,12 @@ var VHostFlag string
 var DefaultWarningThresholdFlag int
 var DefaultCriticalThresholdFlag int
 
+// JSON parsing
+type PublicKey struct {
+  Name string
+  Messages int
+}
+
 // Function without return, because all variables are global
 func parse_args() {
   // Parsing arguments
@@ -87,18 +94,18 @@ func parse_args() {
   flag.Parse()
 
   // Output to the screen
-  // fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
-  // fmt.Println("Queues to be monitored:", QueuesFlags)
-  // fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
-  // fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
-  //
-  // fmt.Println("URL:", URLFlag)
-  // fmt.Println("Username:", UsernameFlag)
-  // fmt.Println("Password:", PasswordFlag)
-  // fmt.Println("Virtual host:", VHostFlag)
-  //
-  // fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
-  // fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
+  fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
+  fmt.Println("Queues to be monitored:", QueuesFlags)
+  fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
+  fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
+
+  fmt.Println("URL:", URLFlag)
+  fmt.Println("Username:", UsernameFlag)
+  fmt.Println("Password:", PasswordFlag)
+  fmt.Println("Virtual host:", VHostFlag)
+
+  fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
+  fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
 }
 
 func http_query(method string, address string, user string, pass string) string {
@@ -110,19 +117,34 @@ func http_query(method string, address string, user string, pass string) string 
   // Doing actual HTTP request
   request, error := http.NewRequest(method, address, nil)
 
-  // Basic HTTP authentication
-  request.SetBasicAuth(user, pass)
-
-  // Getting the output
-  response, error := client_with_timeout.Do(request)
-
-  // Throw an error
   if error != nil{
     log.Fatal(error)
   }
 
-  // Write the output to memory - variable
+  // Basic HTTP authentication
+  request.SetBasicAuth(user, pass)
+  // user, pass, ok := request.BasicAuth()
+  // fmt.Println(ok)
+
+  // Getting the output
+  response, error := client_with_timeout.Do(request)
+
+  if error != nil{
+    log.Fatal(error)
+  }
+
+  // Check if password was correct
+  // auth := response.Header.Get("Authorization")
+  // up, _ := base64.StdEncoding.DecodeString(auth[6:])
+  //
+  // fmt.Println(up)
+
+  // Write the output to variable (memory)
   bodyText, error := ioutil.ReadAll(response.Body)
+  response.Body.Close()
+  if error != nil {
+    log.Fatal(error)
+  }
 
   // Getting the output
   var result map[string]interface{}
@@ -134,15 +156,11 @@ func http_query(method string, address string, user string, pass string) string 
 }
 
 func main() {
+  // Parse all arguments
   parse_args()
 
-  // Doing HTTP query
-  http_query_content := http_query("GET", "http://localhost:15672/api/queues", "monitoring", "password")
-
-  type PublicKey struct {
-    Name string
-    Messages int
-  }
+  // Do HTTP query
+  http_query_content := http_query("GET", URLFlag, UsernameFlag, "password")
 
   input := []byte(http_query_content)
 
