@@ -2,7 +2,7 @@
 
 // An example to call this script (remove loop function)
 //
-// loop ./passing_arguments.go --queues-ignore ignore_this_queue --queues-ignore ignore_this_queue_as_well --warning-threshold 1 --critical-threshold 2 --warning-threshold 1 --critical-threshold 2 --default-warning-threshold 4 --default-critical-threshold 5 --queue some_incoming_queue --queue some_outgoing_queue --url http://localhost:15672/api/queues --username monitoring --password password --vhost Some_Virtual_Host
+// loop ./monitoring.go --queues-ignore ignore_this_queue --queues-ignore ignore_this_queue_as_well --warning-threshold 1 --critical-threshold 2 --warning-threshold 1 --critical-threshold 2 --default-warning-threshold 4 --default-critical-threshold 5 --queue some_incoming_queue --queue some_outgoing_queue --url http://localhost:15672/api/queues --username monitoring --password password --vhost Some_Virtual_Host
 
 package main
 
@@ -101,7 +101,7 @@ func parse_args() {
   fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
 }
 
-func rest_query(method string, address string, user string, pass string) ([]byte) {
+func http_query(method string, address string, user string, pass string) ([]byte) {
   // Use HTTP connection
   var client_with_timeout = &http.Client{
     Timeout: time.Second * 10,
@@ -118,7 +118,7 @@ func rest_query(method string, address string, user string, pass string) ([]byte
 
   // Throw an error
   if error != nil{
-      log.Fatal(error)
+    log.Fatal(error)
   }
 
   // Write the output to memory - variable
@@ -145,13 +145,10 @@ func parse_json_example() {
   json.Unmarshal([]byte(birdJson), &bird)
 
   fmt.Printf("\nSpecies:\n%s\n\nDescription:\n%s\n", bird.Species, bird.Description)
+}
 
-  // Converting string to json
-  // jsonString := "{\"foo\":{\"baz\": [1,2,3]}}"
-  jsonString := rest_query("GET", "https://api.github.com/users/1", "", "")
-
-  // rest_query_content2 := rest_query("GET", "http://api.open-notify.org/astros.json", "", "")
-  // fmt.Println(rest_query_content2)
+func parse_json_example2() {
+  jsonString := http_query("GET", "https://api.github.com/users/1", "", "")
 
   var jsonMap map[string]interface{}
   json.Unmarshal([]byte(jsonString ), &jsonMap)
@@ -163,14 +160,60 @@ func main() {
   parse_args()
 
   // Doing HTTP query
-  rest_query_content := rest_query("GET", "http://localhost:15672/api/queues", "monitoring", "password")
-  fmt.Println(string(rest_query_content))
+  http_query_content := http_query("GET", "http://localhost:15672/api/queues", "monitoring", "password")
+  // fmt.Println(string(http_query_content))
 
-  // b, err := json.MarshalIndent(rest_query_content, "", "   ")
+  type PublicKey2 struct {
+    Name string
+    Messages int
+  }
+
+  input2 := []byte(string(http_query_content))
+
+  var output2 []PublicKey2
+  json.Unmarshal([]byte(input2), &output2)
+
+  for key2, value2 := range output2 {
+    fmt.Printf("Id: %v\n", key2)
+    fmt.Printf("Name: %v\n", value2.Name)
+    fmt.Printf("Messages: %v\n", value2.Messages)
+  }
+
+  type PublicKey struct {
+    Id int
+    People string
+    // [] tells that it's json array, remove if you don't have array in front of groups:
+    Groups []struct {
+      Name string
+    }
+  }
+
+  input := []byte(`[
+    {"id": 1, "people": "Tom", "groups": [{"name": "groupA"}]},
+    {"id": 2, "people": "Ben", "groups": [{"name": "groupB"}]},
+    {"id": 3, "people": "Dan", "groups": [{"name": "groupA"}, {"name": "groupC"}]}
+    ]`)
+
+  var output []PublicKey
+  json.Unmarshal([]byte(input), &output)
+
+  for key, value := range output {
+    fmt.Printf("Id: %v\n", key)
+    fmt.Printf("People: %v\n", value.People)
+
+    // fmt.Printf("Groups: %v\n", value.Groups[0].Name)
+    for key_groups, value_groups := range value.Groups {
+      fmt.Printf("  Group %v: %v\n", key_groups, value_groups.Name)
+    }
+    fmt.Println()
+  }
+
+  // b, err := json.MarshalIndent(http_query_content, "", "   ")
   // if err != nil {
   //   fmt.Println("error:", err)
   // }
   // os.Stdout.Write(b)
 
-  parse_json_example()
+  // parse_json_example()
+  // parse_json_example2()
 }
