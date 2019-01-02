@@ -16,7 +16,6 @@ import (
   "log"
   "encoding/json"
   "time"
-  // "encoding/base64"
 )
 
 var _ = fmt.Printf
@@ -63,6 +62,7 @@ var URLFlag string
 var UsernameFlag string
 var PasswordFlag string
 var VHostFlag string
+var DebugFlag string
 
 var DefaultWarningThresholdFlag int
 var DefaultCriticalThresholdFlag int
@@ -71,6 +71,7 @@ var DefaultCriticalThresholdFlag int
 type PublicKey struct {
   Name string
   Messages int
+  Vhost string
 }
 
 // Function without return, because all variables are global
@@ -86,6 +87,7 @@ func parse_args() {
   flag.StringVar(&UsernameFlag, "username", "", "This is RabbitMQ API username")
   flag.StringVar(&PasswordFlag, "password", "", "This is RabbitMQ API password")
   flag.StringVar(&VHostFlag, "vhost", "", "This is RabbitMQ virtual host")
+  flag.StringVar(&DebugFlag, "debug", "no", "Set it to 'yes' for more verbose output")
 
   flag.IntVar(&DefaultWarningThresholdFlag, "default-warning-threshold", 0, "test")
   flag.IntVar(&DefaultCriticalThresholdFlag, "default-critical-threshold", 0, "test")
@@ -93,19 +95,21 @@ func parse_args() {
   // Parse all arguments in
   flag.Parse()
 
-  // Output to the screen
-  fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
-  fmt.Println("Queues to be monitored:", QueuesFlags)
-  fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
-  fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
+  // Debug mode
+  if DebugFlag == "yes" {
+    fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
+    fmt.Println("Queues to be monitored:", QueuesFlags)
+    fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
+    fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
 
-  fmt.Println("URL:", URLFlag)
-  fmt.Println("Username:", UsernameFlag)
-  fmt.Println("Password:", PasswordFlag)
-  fmt.Println("Virtual host:", VHostFlag)
+    fmt.Println("URL:", URLFlag)
+    fmt.Println("Username:", UsernameFlag)
+    fmt.Println("Password:", PasswordFlag)
+    fmt.Println("Virtual host:", VHostFlag)
 
-  fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
-  fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
+    fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
+    fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
+  }
 }
 
 func http_query(method string, address string, user string, pass string) string {
@@ -117,14 +121,12 @@ func http_query(method string, address string, user string, pass string) string 
   // Doing actual HTTP request
   request, error := http.NewRequest(method, address, nil)
 
+  // Basic HTTP authentication
+  request.SetBasicAuth(user, pass)
+
   if error != nil{
     log.Fatal(error)
   }
-
-  // Basic HTTP authentication
-  request.SetBasicAuth(user, pass)
-  // user, pass, ok := request.BasicAuth()
-  // fmt.Println(ok)
 
   // Getting the output
   response, error := client_with_timeout.Do(request)
@@ -133,13 +135,14 @@ func http_query(method string, address string, user string, pass string) string 
     log.Fatal(error)
   }
 
-  // Check if password was correct
-  // auth := response.Header.Get("Authorization")
-  // up, _ := base64.StdEncoding.DecodeString(auth[6:])
-  //
-  // fmt.Println(up)
+  // Checking HTTP response
+  defer response.Body.Close()
 
-  // Write the output to variable (memory)
+  if response.StatusCode != 200 {
+    log.Fatal("HTTP response code is not 200, for example: incorrect user's credentials, access denied, etc.")
+  }
+
+  // Write the output to variable (consumes memory based on JSON size)
   bodyText, error := ioutil.ReadAll(response.Body)
   response.Body.Close()
   if error != nil {
@@ -155,19 +158,41 @@ func http_query(method string, address string, user string, pass string) string 
   return bodyText_string
 }
 
-func main() {
-  // Parse all arguments
-  parse_args()
-
-  // Do HTTP query
-  http_query_content := http_query("GET", URLFlag, UsernameFlag, "password")
-
-  input := []byte(http_query_content)
+func parse_json(whole_json string) string {
+  // Parse JSON
+  input := []byte(whole_json)
 
   var output []PublicKey
   json.Unmarshal([]byte(input), &output)
 
+  any_queues := false
+
   for _ , value := range output {
-    fmt.Printf("%v: %v\n", value.Name, value.Messages)
+    if VHostFlag == value.Vhost {
+      any_queues = true
+
+      // some work needed here
+
+      fmt.Printf("%v %v: %v\n", value.Vhost, value.Name, value.Messages)
+    }
   }
+
+  if any_queues == false {
+    fmt.Printf("No queues found for virtual host named %v on %v\n", VHostFlag, URLFlag)
+  }
+
+  return "Success"
+}
+
+func main() {
+  // Parse all arguments (they are global variables)
+  parse_args()
+
+  // Do HTTP query
+  http_query_content := http_query("GET", URLFlag, UsernameFlag, PasswordFlag)
+
+  // Parse required elements from JSON
+  am_i_successful := parse_json(http_query_content)
+
+  fmt.Println(am_i_successful)
 }
