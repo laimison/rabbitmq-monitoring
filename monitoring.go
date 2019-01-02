@@ -2,7 +2,7 @@
 
 // An example to call this script (remove loop function)
 //
-// loop ./monitoring.go --queues-ignore ignore_this_queue --queues-ignore ignore_this_queue_as_well --warning-threshold 1 --critical-threshold 2 --warning-threshold 1 --critical-threshold 2 --default-warning-threshold 4 --default-critical-threshold 5 --queue some_incoming_queue --queue some_outgoing_queue --url http://localhost:15672/api/queues --username monitoring --password password --vhost Some_Virtual_Host
+// loop ./monitoring.go --queues-ignore ignore_this_queue --queues-ignore ignore_this_queue_as_well --warning-threshold 1 --critical-threshold 3 --warning-threshold 2 --critical-threshold 4 --default-warning-threshold 4 --default-critical-threshold 5 --queue some_incoming_queue --queue some_outgoing_queue --url http://localhost:15672/api/queues --username monitoring --password password --vhost Some_Virtual_Host
 
 package main
 
@@ -158,6 +158,16 @@ func http_query(method string, address string, user string, pass string) string 
   return bodyText_string
 }
 
+// There is no built-in operator to check whether array contains a string so writing my own
+func contains(arr []string, str string) bool {
+  for _, a := range arr {
+    if a == str {
+      return true
+    }
+  }
+  return false
+}
+
 func parse_json(whole_json string) string {
   // Parse JSON
   input := []byte(whole_json)
@@ -165,34 +175,81 @@ func parse_json(whole_json string) string {
   var output []PublicKey
   json.Unmarshal([]byte(input), &output)
 
+  // Check if found at least 1 queue for monitoring
   any_queues := false
 
-  for _ , value := range output {
-    if VHostFlag == value.Vhost {
-      any_queues = true
+  // Count queues (this is needed to access specific element in array)
+  queue_counter := 0
 
-      // some work needed here
+  // Use common variables for thresholds
+  warning_threshold := 0
+  critical_threshold := 0
 
-      fmt.Printf("%v %v: %v\n", value.Vhost, value.Name, value.Messages)
+  // Alert
+  warning_alert := false
+  critical_alert := false
+
+  // Go through all queues in a whole JSON
+  for _ , from_json := range output {
+    // Skip if vhost not matched
+    if VHostFlag != from_json.Vhost {
+      continue
     }
+
+    // Skip if queue asked to be ignored
+    if contains(QueuesIgnoreFlags, from_json.Name) {
+      // fmt.Printf("Skip: %v\n", from_json.Name)
+      continue
+    }
+
+    any_queues = true
+
+    // Find explicitly specified queues
+    if contains(QueuesFlags, from_json.Name) {
+      warning_threshold = WarningThresholdFlag[queue_counter]
+      critical_threshold = CriticalThresholdFlag[queue_counter]
+      queue_counter = queue_counter + 1
+    } else {
+      // Here goes queues that were not specified
+      warning_threshold = DefaultWarningThresholdFlag
+      critical_threshold = DefaultCriticalThresholdFlag
+    }
+    fmt.Printf("%v Current: %v Warning: %v Critical: %v\n", from_json.Name, from_json.Messages, warning_threshold, critical_threshold)
+
+    if from_json.Messages >= critical_threshold {
+      critical_alert = true
+    } else if from_json.Messages >= warning_threshold {
+      warning_alert = true
+      os.Exit(2)
+    }
+  }
+
+  if critical_alert {
+    fmt.Printf("critical alert\n")
+    os.Exit(1)
+  }
+
+  if warning_alert {
+    fmt.Printf("warning alert\n")
+    os.Exit(2)
   }
 
   if any_queues == false {
     fmt.Printf("No queues found for virtual host named %v on %v\n", VHostFlag, URLFlag)
   }
 
-  return "Success"
+  return "exit code 0"
 }
 
-func main() {
-  // Parse all arguments (they are global variables)
-  parse_args()
+  func main() {
+    // Parse all arguments (they will be asigned as global variables)
+    parse_args()
 
-  // Do HTTP query
-  http_query_content := http_query("GET", URLFlag, UsernameFlag, PasswordFlag)
+    // Do HTTP query
+    http_query_content := http_query("GET", URLFlag, UsernameFlag, PasswordFlag)
 
-  // Parse required elements from JSON
-  am_i_successful := parse_json(http_query_content)
+    // Parse JSON and get required elements
+    am_i_successful := parse_json(http_query_content)
 
-  fmt.Println(am_i_successful)
-}
+    fmt.Println(am_i_successful)
+  }
