@@ -83,7 +83,7 @@ func parse_args() {
   flag.Var(&WarningThresholdFlag, "threshold-warning", "This is a warning threshold. If you have specified multiple queues, you need multiple --threshold-warning parameters, e.g. --threshold-warning 10 --threshold-warning 20")
   flag.Var(&CriticalThresholdFlag, "threshold-critical", "This is a critical threshold. If you have specified multiple queues, you need multiple --threshold-critical parameters, e.g. --threshold-critical 20 --threshold-critical 20")
 
-  flag.StringVar(&URLFlag, "api-url", "", "This is RabbitMQ URL, e.g. --api-url 'http://10.10.10.10:15672/api/queues'")
+  flag.StringVar(&URLFlag, "api-url", "", "This is RabbitMQ URL, e.g. --api-url 'http://localhost:15672/api/queues'")
   flag.StringVar(&UsernameFlag, "api-username", "", "This is RabbitMQ API username, e.g. --api-username monitoring")
   flag.StringVar(&PasswordFlag, "api-password", "", "This is RabbitMQ API password, e.g. --api-password MyPassword")
   flag.StringVar(&VHostFlag, "vhost", "", "This is your target RabbitMQ virtual host, but IMPORTANT that other virtual hosts will not be monitored")
