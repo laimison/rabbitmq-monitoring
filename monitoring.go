@@ -158,7 +158,7 @@ func http_query(method string, address string, user string, pass string) string 
   return bodyText_string
 }
 
-// There is no built-in operator to check whether array contains a string so writing my own
+// There is no built-in operator in Go to check whether array contains a string so writing my own
 func contains(arr []string, str string) bool {
   for _, a := range arr {
     if a == str {
@@ -180,7 +180,7 @@ func parse_json(whole_json string) string {
   // We need to count queues to track the order
   queue_counter := 0
 
-  // We have thresholds specified by user or default, these variables to combine them
+  // We have thresholds specified 1)by user or 2)default, these variables to combine them into one variable later
   warning_threshold := 0
   critical_threshold := 0
 
@@ -188,7 +188,7 @@ func parse_json(whole_json string) string {
   warning_alert := false
   critical_alert := false
 
-  // Go through all queues in a whole JSON
+  // Go through all queues from a whole JSON
   for _ , from_json := range output {
     // Skip if vhost not matched
     if VHostFlag != from_json.Vhost {
@@ -202,21 +202,28 @@ func parse_json(whole_json string) string {
       continue
     }
 
-    // At this stage we know that we have at least 1 queue for monitoring
+    // At this stage we know that there is at least 1 queue for monitoring
     any_queues = true
 
     // Match queues in JSON that originally were specified by user
     if contains(QueuesFlags, from_json.Name) {
-      // Assign to common *_threshold parameters, also get thresholds based on order originally specified by user
-      // fmt.Printf("Monitor: %v\n", from_json.Name)
+      // Assign to common *_threshold parameters
+      // Get thresholds based on order, passed as the arguments by the user
       warning_threshold = WarningThresholdFlag[queue_counter]
       critical_threshold = CriticalThresholdFlag[queue_counter]
       queue_counter = queue_counter + 1
+      
+      if DebugFlag == "yes" {
+        fmt.Printf("Monitor: %v\n", from_json.Name)
+      }
     } else {
-      // Here goes queues that were not specified by user - "default thresholds"
-      // fmt.Printf("Monitor additional: %v\n", from_json.Name)
+      // Here goes queues that were not specified by user, they get default thresholds
       warning_threshold = DefaultWarningThresholdFlag
       critical_threshold = DefaultCriticalThresholdFlag
+
+      if DebugFlag == "yes" {
+        fmt.Printf("Monitor additional: %v\n", from_json.Name)
+      }
     }
     // Print all queues for monitoring
     fmt.Printf("%v Current: %v Warning: %v Critical: %v\n", from_json.Name, from_json.Messages, warning_threshold, critical_threshold)
@@ -235,7 +242,7 @@ func parse_json(whole_json string) string {
     os.Exit(101)
   }
 
-  // ---- Exit the script for warning alert, the priority is for critical over warning alert ----
+  // ---- Exit the script for warning alert, only if there was no critical alert ----
   if warning_alert {
     fmt.Printf("! warning alert !\n")
     os.Exit(100)
@@ -246,7 +253,7 @@ func parse_json(whole_json string) string {
     fmt.Printf("No queues found for virtual host named %v on %v\n", VHostFlag, URLFlag)
   }
 
-  // If script went to this phase, it means there are no alerts at this moment
+  // If script ran to this line, it means there are no alerts at this moment
   return "exit status 0"
 }
 

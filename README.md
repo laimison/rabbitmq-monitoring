@@ -1,6 +1,6 @@
 # rabbitmq-monitoring
 
-This repo helps to install and configure RabbitMQ. The main goal is to prepare monitoring for the queues then.
+This repo helps to install, configure RabbitMQ and also monitor your queues using RabbitMQ API or Prometheus.
 
 ## Usage
 
@@ -24,11 +24,15 @@ This repo helps to install and configure RabbitMQ. The main goal is to prepare m
 
 `enable/` - rabbitmq_management is usually enabled so you can do monitoring GET queries
 
-* Use the commands in a root dir to check the queues, publish messages, check some statuses and utilizations
+* There are more commands in a root dir to check the queues, publish messages, check some statuses, utilizations, etc.
+
+* Main monitoring script is written in Go:
+
+`./monitoring.go --help`
 
 ## Requirements
 
-Scripts are designed for Mac OS.
+Scripts are tested on Mac OS, but could be suitable for Linux.
 
 ## References
 
