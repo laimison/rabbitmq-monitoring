@@ -2,7 +2,7 @@
 
 // An example to call this script (remove loop function)
 //
-// loop ./monitoring.go --queues-ignore ignore_this_queue --queues-ignore ignore_this_queue_as_well --warning-threshold 1 --critical-threshold 3 --warning-threshold 2 --critical-threshold 4 --default-warning-threshold 4 --default-critical-threshold 5 --queue some_incoming_queue --queue some_outgoing_queue --url http://localhost:15672/api/queues --username monitoring --password password --vhost Some_Virtual_Host
+// loop ./monitoring.go --queue-ignore ignore_this_queue --queue-ignore ignore_this_queue_as_well --threshold-warning 1 --threshold-critical 3 --threshold-warning 2 --threshold-critical 5 --threshold-warning-default 4 --threshold-critical-default 5 --queue some_incoming_queue --queue some_outgoing_queue --api-url 'http://localhost:15672/api/queues' --api-username monitoring --api-password password --vhost Some_Virtual_Host --debug no
 
 package main
 
@@ -77,30 +77,37 @@ type PublicKey struct {
 // Function without return, because all variables are global
 func parse_args() {
   // Parsing arguments
-  flag.Var(&QueuesIgnoreFlags, "queues-ignore", "test")
-  flag.Var(&QueuesFlags, "queue", "This is a queue name. You can add multiple queues with multiple --queue arguments")
+  flag.Var(&QueuesIgnoreFlags, "queue-ignore", "You need to specify the queues that should be excluded from monitoring, otherwise they will be monitored, e.g. --queue-ignore queue1 --queue-ignore queue2")
+  flag.Var(&QueuesFlags, "queue", "This is a queue name for monitoring. You can add multiple queues, e.g. --queue queueA --queue queueB")
 
-  flag.Var(&WarningThresholdFlag, "warning-threshold", "test")
-  flag.Var(&CriticalThresholdFlag, "critical-threshold", "test")
+  flag.Var(&WarningThresholdFlag, "threshold-warning", "This is a warning threshold. If you have specified multiple queues, you need multiple --threshold-warning parameters, e.g. --threshold-warning 10 --threshold-warning 20")
+  flag.Var(&CriticalThresholdFlag, "threshold-critical", "This is a critical threshold. If you have specified multiple queues, you need multiple --threshold-critical parameters, e.g. --threshold-critical 20 --threshold-critical 20")
 
-  flag.StringVar(&URLFlag, "url", "", "This is RabbitMQ URL")
-  flag.StringVar(&UsernameFlag, "username", "", "This is RabbitMQ API username")
-  flag.StringVar(&PasswordFlag, "password", "", "This is RabbitMQ API password")
-  flag.StringVar(&VHostFlag, "vhost", "", "This is RabbitMQ virtual host")
-  flag.StringVar(&DebugFlag, "debug", "no", "Set it to 'yes' for more verbose output")
+  flag.StringVar(&URLFlag, "api-url", "", "This is RabbitMQ URL, e.g. --api-url 'http://10.10.10.10:15672/api/queues'")
+  flag.StringVar(&UsernameFlag, "api-username", "", "This is RabbitMQ API username, e.g. --api-username monitoring")
+  flag.StringVar(&PasswordFlag, "api-password", "", "This is RabbitMQ API password, e.g. --api-password MyPassword")
+  flag.StringVar(&VHostFlag, "vhost", "", "This is your target RabbitMQ virtual host, but IMPORTANT that other virtual hosts will not be monitored")
+  flag.StringVar(&DebugFlag, "debug", "no", "For more verbose output use --debug yes")
 
-  flag.IntVar(&DefaultWarningThresholdFlag, "default-warning-threshold", 0, "test")
-  flag.IntVar(&DefaultCriticalThresholdFlag, "default-critical-threshold", 0, "test")
+  flag.IntVar(&DefaultWarningThresholdFlag, "threshold-warning-default", 40, "If you didn't specify the queue it's still monitored and has warning threshold")
+  flag.IntVar(&DefaultCriticalThresholdFlag, "threshold-critical-default", 50, "If you didn't specify the queue it's still monitored and has critical threshold")
 
   // Parse all arguments in
   flag.Parse()
 
+  // Check whether the same count of arguments passed for each queue
+  if len(QueuesFlags) != len(WarningThresholdFlag) || len(QueuesFlags) != len(CriticalThresholdFlag) {
+    fmt.Println("It seems you have passed different count of arguments for queues and queues thresholds, please check --help")
+    os.Exit(3)
+  }
+
   // Debug mode
   if DebugFlag == "yes" {
-    fmt.Println("Queues to be ignored:", QueuesIgnoreFlags)
-    fmt.Println("Queues to be monitored:", QueuesFlags)
-    fmt.Println("Warning thresholds for these queues:", WarningThresholdFlag)
-    fmt.Println("Critical thresholds for these queues:", CriticalThresholdFlag)
+    fmt.Println("---- Arguments ----")
+    fmt.Printf("%v queue(s) to be ignored: %v\n", len(QueuesIgnoreFlags), QueuesIgnoreFlags)
+    fmt.Printf("%v queue(s) to be monitored: %v\n", len(QueuesFlags), QueuesFlags)
+    fmt.Printf("%v warning threshold(s) for the queue(s): %v\n", len(WarningThresholdFlag), WarningThresholdFlag)
+    fmt.Printf("%v critical threshold(s) for the queue(s): %v\n", len(CriticalThresholdFlag), CriticalThresholdFlag)
 
     fmt.Println("URL:", URLFlag)
     fmt.Println("Username:", UsernameFlag)
@@ -109,6 +116,7 @@ func parse_args() {
 
     fmt.Println("Default warning threshold:", DefaultWarningThresholdFlag)
     fmt.Println("Default critical threshold:", DefaultCriticalThresholdFlag)
+    fmt.Println("---- ---- ---- ----")
   }
 }
 
@@ -212,7 +220,7 @@ func parse_json(whole_json string) string {
       warning_threshold = WarningThresholdFlag[queue_counter]
       critical_threshold = CriticalThresholdFlag[queue_counter]
       queue_counter = queue_counter + 1
-      
+
       if DebugFlag == "yes" {
         fmt.Printf("Monitor: %v\n", from_json.Name)
       }
@@ -238,13 +246,13 @@ func parse_json(whole_json string) string {
 
   // ---- Exit the script for critical alert ----
   if critical_alert {
-    fmt.Printf("! critical alert !\n")
+    fmt.Println("! critical alert !")
     os.Exit(101)
   }
 
   // ---- Exit the script for warning alert, only if there was no critical alert ----
   if warning_alert {
-    fmt.Printf("! warning alert !\n")
+    fmt.Println("! warning alert !")
     os.Exit(100)
   }
 
@@ -257,15 +265,16 @@ func parse_json(whole_json string) string {
   return "exit status 0"
 }
 
-  func main() {
-    // Parse all arguments (they will be asigned as global variables)
-    parse_args()
+func main() {
+  // Parse all arguments (they will be asigned as global variables)
+  parse_args()
 
-    // Do HTTP query
-    http_query_content := http_query("GET", URLFlag, UsernameFlag, PasswordFlag)
+  // Do HTTP query
+  http_query_content := http_query("GET", URLFlag, UsernameFlag, PasswordFlag)
 
-    // Parse JSON and get required elements
-    am_i_successful := parse_json(http_query_content)
+  // Parse JSON and throw alert if threshold reached
+  am_i_successful := parse_json(http_query_content)
 
-    fmt.Println(am_i_successful)
-  }
+  // Just an output from the function
+  fmt.Println(am_i_successful)
+}
