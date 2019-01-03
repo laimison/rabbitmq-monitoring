@@ -26,7 +26,7 @@ This repo helps to install, configure RabbitMQ and also monitor your queues usin
 
 * There are more commands in a root dir to check the queues, publish messages, check some statuses, utilizations, etc.
 
-* Main monitoring script is written in Go:
+* Monitoring script written in Go, check help section for usage:
 
 `./monitoring.go --help`
 
